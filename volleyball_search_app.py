@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# 台灣排球數據分析 Streamlit 應用程式 - 企業聯賽多賽季採集框架
+# 台灣排球數據分析 Streamlit 應用程式 - 企業聯賽多賽季採集框架 (V.2 - 模擬Image 2風格)
 
 import pandas as pd
 import streamlit as st
@@ -13,12 +13,12 @@ import io
 # I. 數據模型與爬蟲指引
 # ====================================================================
 
-# 定義目標賽季
+# 定義目標賽季及其 URL 模式 (此處為假數據，需要替換為實際的 URL 模式)
 VLEAGUE_SEASONS = {
-    '企業二十年 (2025-2026)': 'URL_PATTERN_20', # 假設未來的賽季
-    '企業十九年 (2024-2025)': 'URL_PATTERN_19', # 假設未來的賽季
-    '企業十八年 (2023-2024)': 'URL_PATTERN_18', # 根據實際網站填寫
-    '企業十七年 (2022-2023)': 'URL_PATTERN_17', # 根據實際網站填寫
+    '企業二十年 (2025-2026)': 'https://vleague.ctvba.org.tw/20/', 
+    '企業十九年 (2024-2025)': 'https://vleague.ctvba.org.tw/19/', 
+    '企業十八年 (2023-2024)': 'https://vleague.ctvba.org.tw/18/', 
+    '企業十七年 (2022-2023)': 'https://vleague.ctvba.org.tw/17/', 
 }
 
 # 定義所有需要的數據欄位
@@ -29,11 +29,11 @@ VOLLEYBALL_STATS_COLUMNS = [
     '接發成功率'
 ]
 
-# --- 數據分析函數 (保持不變，用於計算效率) ---
+# --- 數據計算與分析邏輯 (保持不變) ---
 def calculate_efficiency(df):
     """計算排球員的關鍵效率指標。"""
     
-    numeric_cols = ['攻擊得分', '攻擊失誤', '攻擊次數', '攔網得分', '發球得分', '發球失誤', '上場局數', '身高(cm)', '體重(kg)']
+    numeric_cols = ['攻擊得分', '攻擊失誤', '攻擊次數', '攔網得分', '發球得分', '發球失誤', '上場局數', '身高(cm)', '體重(kg)', '接發成功率']
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
     
@@ -59,158 +59,225 @@ def analyze_player_role(stats):
         return "🔥 **高效得分機器**：主要進攻點，火力強勁且效率極高。"
     elif avg_block_score >= 1 and position == '副攻':
         return "🧱 **優秀攔網中樞**：主要貢獻來自攔網，是球隊防守的堅實後盾。"
-    elif position == '自由球員' and stats.get('接發成功率', 0) >= 65: # 使用 .get 處理可能缺少的欄位
+    elif position == '自由球員' and stats.get('接發成功率', 0) >= 65: 
         return "🛡️ **後排指揮官**：確保一傳穩定，是戰術發動的核心。"
     else:
         return "可靠的輪換或特定戰術球員。"
 
-
 # ====================================================================
-# II. 企業聯賽數據爬蟲 (核心實作區)
+# II. 企業聯賽數據爬蟲與模擬數據 (核心實作區)
 # ====================================================================
 
 @st.cache_data(ttl=3600)
-def fetch_and_merge_stats(season_id):
+def fetch_all_data_for_season(season_id):
     """
-    此函數負責協調爬蟲並合併數據。
+    此函數負責協調爬蟲並合併數據。為模擬Image 2，我們會生成更豐富的假數據。
     
-    步驟 1: 爬取名單數據 (Roster)
-    步驟 2: 爬取統計數據 (Stats)
-    步驟 3: 合併數據 (Merge)
+    ⚠️ 實作指引:
+    1. 針對每個賽季的男子組，找到球員名單頁面和統計數據頁面的 URL。
+    2. 使用 requests + BeautifulSoup 爬取隊伍、球員名單、位置、身高、體重。
+    3. 使用 requests + BeautifulSoup 爬取球員的各項統計數據。
+    4. 根據球員姓名進行數據合併。
     """
     
-    # -----------------------------------------------------------
-    # ⚠️ 實作區塊 1: 名單數據爬蟲 (身高, 體重, 位置)
-    # -----------------------------------------------------------
+    # 這裡將使用更複雜的假數據來模擬多隊伍、多球員的情況
+    # 這是您需要替換為真實爬蟲代碼的部分
+    
     st.info(f"步驟 1/3: 採集 {season_id} 球員名單中...")
     
-    # URL 範例: 找到該賽季男子組所有隊伍名單頁
-    # roster_url = VLEAGUE_SEASONS[season_id] + "/men_roster.html" 
-    
-    # 假設您爬取成功並返回一個 DataFrame
-    # 需包含: 姓名, 隊伍, 位置, 身高(cm), 體重(kg), 接發成功率(選填)
-    roster_df = pd.DataFrame({
-        '姓名': ['李X志', '陳X杰', '高X林'], 
-        '隊伍': ['台電', '長力', '雲林美津濃'], 
-        '位置': ['主攻', '接應', '副攻'], 
-        '身高(cm)': [185, 190, 198], 
-        '體重(kg)': [75, 80, 90], 
-        '接發成功率': [60, 55, 10]
-    })
-    
     # -----------------------------------------------------------
-    # ⚠️ 實作區塊 2: 統計數據爬蟲 (得分, 效率)
+    # 假數據生成邏輯 (需要您替換為真實的爬蟲結果)
     # -----------------------------------------------------------
-    st.info(f"步驟 2/3: 採集 {season_id} 統計數據中...")
-    
-    # stats_url = VLEAGUE_SEASONS[season_id] + "/men_stats_player.html"
-    
-    # 假設您爬取成功並返回一個 DataFrame
-    # 需包含: 姓名, 上場局數, 攻擊得分, 攻擊失誤, 攻擊次數, 攔網得分, 發球得分, 發球失誤
-    stats_df = pd.DataFrame({
-        '姓名': ['李X志', '陳X杰', '高X林'],
-        '上場局數': [35, 40, 38],
-        '攻擊得分': [150, 220, 90],
-        '攻擊失誤': [10, 20, 5],
-        '攻擊次數': [400, 550, 180],
-        '攔網得分': [15, 10, 45],
-        '發球得分': [5, 8, 2],
-        '發球失誤': [8, 12, 4]
-    })
-    
-    if roster_df.empty or stats_df.empty:
-        return None
-
-    # -----------------------------------------------------------
-    # 步驟 3: 合併數據
-    # -----------------------------------------------------------
-    st.info("步驟 3/3: 合併名單與統計數據...")
-    
-    # 使用 '姓名' 作為合併鍵 (確保姓名是唯一且準確的)
-    final_df = pd.merge(roster_df, stats_df, on='姓名', how='inner')
-    
-    # 確保所有需要的列都存在，如果不存在，則補上 0 (例如接發成功率可能只在名單爬蟲中)
-    missing_cols = [col for col in VOLLEYBALL_STATS_COLUMNS if col not in final_df.columns]
-    for col in missing_cols:
-        final_df[col] = 0
-    
-    return final_df[VOLLEYBALL_STATS_COLUMNS]
-
-
-# ====================================================================
-# III. Streamlit 界面邏輯
-# ====================================================================
-
-st.set_page_config(layout="wide", page_title="台灣企業排球聯賽男子組數據")
-st.title("🏐 企業排球聯賽男子組數據分析儀表板 (企業 17-20 年)")
-
-# --- 側邊欄: 數據獲取參數 ---
-with st.sidebar:
-    st.header("數據獲取參數")
-    
-    # 賽季選擇
-    selected_season = st.selectbox(
-        "選擇企業聯賽賽季:",
-        options=list(VLEAGUE_SEASONS.keys()),
-        index=3, # 預設選擇企業十七年
-        key='vleague_season'
-    )
-    
-    st.subheader("目標組別: 男子組 🧑‍🤝‍🧑")
-    
-    if st.button("🔄 採集並分析數據"):
-        # 呼叫爬蟲函數
-        vleague_df = fetch_and_merge_stats(selected_season)
-        
-        if vleague_df is not None and not vleague_df.empty:
-            st.session_state['volleyball_df'] = vleague_df
-            st.success(f"成功處理 {selected_season} 男子組的 {len(vleague_df)} 筆數據。")
-        else:
-            st.error("無法獲取該賽季數據。請檢查爬蟲函數是否需要更新或該賽季數據不存在。")
-            st.session_state['volleyball_df'] = pd.DataFrame(columns=VOLLEYBALL_STATS_COLUMNS)
-
-# --- 主區域: 數據處理與結果顯示 ---
-
-if 'volleyball_df' not in st.session_state or st.session_state['volleyball_df'].empty:
-    st.warning("請在左側邊欄選擇賽季，並點擊 **採集並分析數據**。")
-else:
-    current_df = st.session_state['volleyball_df'].copy()
-    processed_df = calculate_efficiency(current_df)
-
-    st.subheader(f"📊 {st.session_state['vleague_season']} 男子組球員總體效率排名")
-    
-    # 顯示欄位順序
-    display_cols = ['姓名', '隊伍', '位置', '身高(cm)', '體重(kg)', '總得分', '淨得分', '場均淨得分', '攻擊成功率(%)', '接發成功率']
-    
-    st.dataframe(
-        processed_df.sort_values(by='場均淨得分', ascending=False), 
-        use_container_width=True,
-        column_order=[col for col in display_cols if col in processed_df.columns],
-        column_config={
-            "攻擊成功率(%)": st.column_config.ProgressColumn("攻擊成功率", format="%.2f%%", min_value=0, max_value=60),
-            "場均淨得分": st.column_config.NumberColumn("場均貢獻度", format="%.2f"),
-            "接發成功率": st.column_config.ProgressColumn("接發成功率", format="%.0f%%", min_value=0, max_value=100),
-            "總得分": "總得分", "淨得分": "淨得分", "身高(cm)": "身高", "體重(kg)": "體重"
+    all_players_data = []
+    if season_id == '企業十七年 (2022-2023)':
+        teams = ['台電男排', '長力男排', '雲林美津濃', 'conti']
+        players_per_team = {
+            '台電男排': [('吳X軒', '主攻', 190, 80), ('詹X益', '舉球', 180, 70), ('林X豪', '副攻', 195, 88)],
+            '長力男排': [('陳X杰', '接應', 185, 75), ('黃X銘', '主攻', 188, 78), ('張X源', '自由', 175, 68)],
+            '雲林美津濃': [('高X林', '副攻', 198, 90), ('劉X誠', '主攻', 192, 85)],
+            'conti': [('王X明', '主攻', 182, 72), ('李X龍', '副攻', 196, 89)]
         }
+    elif season_id == '企業十八年 (2023-2024)':
+        teams = ['臺北市', '連莊', '台電男排', '桃園臺灣產物']
+        players_per_team = {
+            '臺北市': [('甲X', '主攻', 187, 77), ('乙X', '舉球', 179, 69)],
+            '連莊': [('丙X', '接應', 186, 76), ('丁X', '副攻', 194, 87)],
+            '台電男排': [('戊X', '主攻', 191, 81), ('己X', '自由', 176, 67)],
+            '桃園臺灣產物': [('庚X', '副攻', 197, 91)]
+        }
+    # 更多的賽季可以在這裡添加假數據
+
+    else: # 默認數據，或提示無數據
+        st.warning(f"目前沒有 {season_id} 的模擬數據，請更新爬蟲代碼。")
+        return pd.DataFrame(columns=VOLLEYBALL_STATS_COLUMNS)
+
+    for team, players in players_per_team.items():
+        for name, pos, height, weight in players:
+            # 模擬統計數據，這裡的值應由統計爬蟲提供
+            attack_pts = round(random.uniform(50, 300), 0) if pos != '自由' else 0
+            attack_err = round(random.uniform(5, 30), 0) if pos != '自由' else 0
+            attack_attempts = round(random.uniform(100, 600), 0) if pos != '自由' else 0
+            block_pts = round(random.uniform(5, 50), 0)
+            service_pts = round(random.uniform(0, 15), 0)
+            service_err = round(random.uniform(0, 10), 0)
+            gp = round(random.uniform(20, 50), 0)
+
+            # 接發成功率主要用於自由球員和主攻手
+            reception_pct = round(random.uniform(50, 80), 0) if pos in ['自由', '主攻'] else 0
+
+            all_players_data.append({
+                '姓名': name,
+                '隊伍': team,
+                '位置': pos,
+                '身高(cm)': height,
+                '體重(kg)': weight,
+                '上場局數': gp,
+                '攻擊得分': attack_pts,
+                '攻擊失誤': attack_err,
+                '攻擊次數': attack_attempts,
+                '攔網得分': block_pts,
+                '發球得分': service_pts,
+                '發球失誤': service_err,
+                '接發成功率': reception_pct
+            })
+
+    final_df = pd.DataFrame(all_players_data)
+    
+    # 確保列名順序與 VOLLEYBALL_STATS_COLUMNS 匹配
+    required_cols = [c for c in VOLLEYBALL_STATS_COLUMNS if c in final_df.columns]
+    
+    st.success(f"成功模擬 {season_id} 男子組的數據。")
+    return final_df[required_cols]
+
+
+# ====================================================================
+# III. Streamlit 界面邏輯 (調整為類似 Image 2 風格)
+# ====================================================================
+
+st.set_page_config(layout="centered", page_title="台灣企業排球聯賽男子組分析")
+st.title("🏐 SV.LEAGUE 男子排球員個人數據與歷史分析")
+st.markdown("##### (2022-2025 賽季)")
+
+# --- 側邊欄: 主要篩選器 ---
+with st.sidebar:
+    st.header("選擇球員")
+    
+    # 1. 賽季選擇
+    selected_season_key = st.selectbox(
+        "選擇聯賽賽季:",
+        options=list(VLEAGUE_SEASONS.keys()),
+        index=list(VLEAGUE_SEASONS.keys()).index('企業十七年 (2022-2023)'), # 預設為企業十七年
+        key='report_season_key'
     )
+    
+    # 確保數據已載入該賽季
+    if 'volleyball_data_cache' not in st.session_state or st.session_state['volleyball_data_cache'].get('season_key') != selected_season_key:
+        with st.spinner(f"正在載入 {selected_season_key} 數據..."):
+            df = fetch_all_data_for_season(selected_season_key)
+            st.session_state['volleyball_data_cache'] = {
+                'season_key': selected_season_key,
+                'data': df
+            }
+            st.success("數據載入完成！")
+    
+    current_season_df = st.session_state['volleyball_data_cache']['data']
+
+    if current_season_df.empty:
+        st.warning(f"當前賽季 ({selected_season_key}) 沒有可用的數據。")
+        # 清空選擇器選項
+        team_options = []
+        player_options = []
+    else:
+        # 2. 隊伍選擇 (動態更新)
+        team_options = ['所有隊伍'] + sorted(current_season_df['隊伍'].unique().tolist())
+        selected_team = st.selectbox(
+            "選擇球隊:",
+            options=team_options,
+            key='report_team_select'
+        )
+        
+        # 根據隊伍篩選球員
+        if selected_team != '所有隊伍':
+            filtered_players_df = current_season_df[current_season_df['隊伍'] == selected_team]
+        else:
+            filtered_players_df = current_season_df
+
+        # 3. 球員選擇 (動態更新)
+        player_options = sorted(filtered_players_df['姓名'].unique().tolist())
+        if not player_options:
+            st.warning("所選隊伍或賽季無球員數據。")
+            selected_player_name = None
+        else:
+            selected_player_name = st.selectbox(
+                "選擇球員:",
+                options=player_options,
+                key='report_player_select'
+            )
 
     st.markdown("---")
-    st.subheader("🔍 單一球員角色分析")
+    st.caption("數據來源: 企業排球聯賽 (需實作網頁爬蟲)")
 
-    player_list = processed_df['姓名'].tolist()
-    if player_list:
-        selected_player_name = st.selectbox("選擇要分析的球員:", options=player_list)
+# --- 主內容區: 球員報告 ---
+if selected_player_name and not current_season_df.empty:
+    player_stats = current_season_df[current_season_df['姓名'] == selected_player_name].reset_index(drop=True)
+    processed_player_stats = calculate_efficiency(player_stats.copy())
+    
+    if not processed_player_stats.empty:
+        player_data = processed_player_stats.iloc[0]
+
+        st.markdown(f"## 👤 **{player_data['姓名']}** 個人表現報告")
+        st.markdown(f"#### 目前服務隊伍 : **{player_data['隊伍']}** ({selected_season_key})")
         
-        if selected_player_name:
-            player_stats = processed_df[processed_df['姓名'] == selected_player_name].reset_index(drop=True)
-            
-            col1, col2, col3, col4, col5 = st.columns(5)
-            col1.metric("位置", player_stats['位置'].iloc[0])
-            col2.metric("身高/體重", f"{int(player_stats['身高(cm)'].iloc[0])}cm/{int(player_stats['體重(kg)'].iloc[0])}kg")
-            col3.metric("場均貢獻度", player_stats['場均淨得分'].iloc[0])
-            col4.metric("攻擊成功率", f"{player_stats['攻擊成功率(%)'].iloc[0]}%")
-            col5.metric("總得分", player_stats['總得分'].iloc[0].astype(int))
-            
-            st.markdown(f"#### 🏐 {selected_player_name} 角色定位分析:")
-            analysis_text = analyze_player_role(player_stats)
+        st.markdown("---")
+        # 1. 基本數據與身體資料 (類似 Image 2 的橫向佈局)
+        st.subheader("1. 基本數據與身體資料")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("身高", f"{int(player_data['身高(cm)'])} cm")
+        with col2:
+            st.metric("體重", f"{int(player_data['體重(kg)'])} kg")
+        with col3:
+            st.metric("位置", player_data['位置'])
+        
+        st.markdown("---")
+        # 2. 關鍵表現數據 (使用 Expander 展開)
+        with st.expander("2. 關鍵表現數據"):
+            col_a, col_b, col_c, col_d = st.columns(4)
+            with col_a:
+                st.metric("上場局數", int(player_data['上場局數']))
+                st.metric("攻擊得分", int(player_data['攻擊得分']))
+            with col_b:
+                st.metric("攔網得分", int(player_data['攔網得分']))
+                st.metric("發球得分", int(player_data['發球得分']))
+            with col_c:
+                st.metric("攻擊成功率", f"{player_data['攻擊成功率(%)']:.2f}%")
+            with col_d:
+                st.metric("接發成功率", f"{int(player_data['接發成功率'])}%")
+                
+            st.markdown("---")
+            st.markdown("##### 總體貢獻")
+            col_e, col_f, col_g = st.columns(3)
+            with col_e:
+                st.metric("總得分", int(player_data['總得分']))
+            with col_f:
+                st.metric("淨得分", int(player_data['淨得分']))
+            with col_g:
+                st.metric("場均貢獻度 (淨得分)", f"{player_data['場均淨得分']:.2f}")
+
+        st.markdown("---")
+        # 3. 角色定位分析
+        with st.expander("3. 角色定位分析"):
+            analysis_text = analyze_player_role(player_data)
             st.markdown(f"> {analysis_text}")
+
+        st.markdown("---")
+        # 4. 歷史表現 (這裡可以預留給未來的多賽季數據比較功能)
+        with st.expander("4. 歷史表現 (多賽季趨勢)"):
+            st.info("此功能需收集多個賽季數據後實現。")
+            # 可以在這裡加入圖表顯示該球員在不同賽季的數據變化
+            
+    else:
+        st.warning("所選球員無數據可供分析。")
+
+else:
+    st.info("請在左側邊欄選擇賽季、球隊和球員以查看詳細報告。")
