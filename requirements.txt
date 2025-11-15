@@ -1,4 +1,4 @@
 streamlit
 pandas
-requests        # 用於獲取網頁內容
-beautifulsoup4  # 用於解析 HTML
+requests
+beautifulsoup4
