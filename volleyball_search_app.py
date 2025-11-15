@@ -12,6 +12,7 @@ TEAMS_DATA = [
     {"team_id": "TSG", "name": "臺中太陽神", "trophy": "無", "note": "聯賽中堅力量，年輕球員的成長搖籃。"},
     {"team_id": "TTI", "name": "桃園台灣產險", "trophy": "無", "note": "穩定的參賽隊伍，時常能帶給強隊壓力。"},
 ]
+# 設定 team_id 為索引
 TEAMS_DF = pd.DataFrame(TEAMS_DATA).set_index("team_id")
 
 # 2. 球員數據 (累積總和: 2022-2025 賽季)
@@ -62,7 +63,8 @@ def format_dataframe_display(df):
 def create_team_analysis_view(team_id):
     """顯示單一隊伍的詳細分析"""
     
-    team_info = TEAMS_DF.loc[team_id]
+    # 使用 .loc[team_id] 存取索引行
+    team_info = TEAMS_DF.loc[team_id] 
     st.markdown(f"## {team_info['name']} 分析 ({team_info['trophy']})")
     
     # 隊伍備註
@@ -151,7 +153,9 @@ st.caption("涵蓋企排 18 年至 21 年男子組數據分析 (數據為模擬)
 st.markdown("---")
 
 # 選擇要分析的隊伍
-team_options = {row['name']: row['team_id'] for index, row in TEAMS_DF.iterrows()}
+# 修正後的邏輯：使用 iterrows() 取得索引 (team_id) 和資料行 (row['name'])
+# 修正點：必須使用 index 來獲取索引值 (team_id)。
+team_options = {row['name']: index for index, row in TEAMS_DF.iterrows()}
 team_names = list(team_options.keys())
 team_names.insert(0, "聯賽總覽") # 增加一個總覽選項
 
