@@ -1,185 +1,229 @@
-import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import streamlit as st 
 import numpy as np
+import matplotlib.font_manager as fm
+import os
 
-# --- 模擬數據集 (2022 - 2025 企排 18-21 年) ---
+# =================================================================
+# 0. 環境配置與字體設置
+# =================================================================
 
-# 1. 隊伍資料
-TEAMS_DATA = [
-    {"team_id": "LC", "name": "連莊排球隊", "trophy": "🏆🏆🏆 (企排18, 19, 20 總冠軍)", "note": "2022年起中斷台電王朝，確立新霸主地位。"},
-    {"team_id": "TP", "name": "屏東台電", "trophy": "🥈🥈 (企排18, 19 亞軍)", "note": "傳統強權，在 2022 年前曾達成八連霸。"},
-    {"team_id": "MZ", "name": "雲林Mizuno", "trophy": "🥉🥉", "note": "具備強大韌性的挑戰者，近年有顯著的本土戰力提升。"},
-    {"team_id": "TSG", "name": "臺中太陽神", "trophy": "無", "note": "聯賽中堅力量，年輕球員的成長搖籃。"},
-    {"team_id": "TTI", "name": "桃園台灣產險", "trophy": "無", "note": "穩定的參賽隊伍，時常能帶給強隊壓力。"},
-]
-# 設定 team_id 為索引
-TEAMS_DF = pd.DataFrame(TEAMS_DATA).set_index("team_id")
+st.set_page_config(layout="wide")
+st.title("🏐 台灣男子排球數據與歷史分析 (TVL / T.P.V.L. 基礎)") # 標題更新
+st.markdown("---")
 
-# 2. 球員數據 (累積總和: 2022-2025 賽季)
-# 數據為模擬，但基於真實球員角色與表現趨勢
-PLAYERS_DATA = [
-    # 連莊排球隊 (LC)
-    {"team_id": "LC", "player": "Bryan Bagunas (菲)", "position": "主攻手 (外援)", "active_seasons": "18, 19", "points": 1200, "blocks": 80, "aces": 60, "digs": 450, "assists": 20},
-    {"team_id": "LC", "player": "吳宗軒", "position": "主攻手", "active_seasons": "18, 19, 20", "points": 950, "blocks": 50, "aces": 35, "digs": 380, "assists": 15},
-    {"team_id": "LC", "player": "施琅 (Veasna, 柬)", "position": "主攻手 (外援)", "active_seasons": "20", "points": 600, "blocks": 40, "aces": 30, "digs": 220, "assists": 10},
-    {"team_id": "LC", "player": "呂姜耀凱", "position": "快攻手", "active_seasons": "18, 19, 20", "points": 450, "blocks": 95, "aces": 18, "digs": 150, "assists": 5},
+# --- 中文字體設置 (維持原穩定設定) ---
+font_path = './NotoSansCJKtc-Regular.otf' 
+
+try:
+    if os.path.exists(font_path):
+        fm.fontManager.addfont(font_path)
+        plt.rcParams['font.family'] = 'Noto Sans CJK TC' 
+        plt.rcParams['axes.unicode_minus'] = False 
+        st.sidebar.success("🎉 中文字體已成功加載！")
+    else:
+        st.sidebar.error(f"🚨 找不到字體文件於: {font_path}")
+        plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial'] 
+        plt.rcParams['axes.unicode_minus'] = False
+except Exception as e:
+    st.sidebar.error(f"🚨 字體加載過程中發生錯誤: {e}")
+    plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial'] 
+    plt.rcParams['axes.unicode_minus'] = False
+
+
+# =================================================================
+# 1. 數據定義與載入 (台灣男子排球數據)
+# =================================================================
+
+@st.cache_data
+def load_data():
     
-    # 屏東台電 (TP)
-    {"team_id": "TP", "player": "陳建禎", "position": "主攻手/隊長", "active_seasons": "18, 19, 20", "points": 700, "blocks": 45, "aces": 40, "digs": 500, "assists": 20},
-    {"team_id": "TP", "player": "戴儒謙", "position": "舉球員", "active_seasons": "18, 19, 20", "points": 150, "blocks": 30, "aces": 25, "digs": 400, "assists": 1200},
-    {"team_id": "TP", "player": "黃建逢", "position": "主攻手", "active_seasons": "18, 19", "points": 650, "blocks": 55, "aces": 30, "digs": 250, "assists": 10},
-    {"team_id": "TP", "player": "莊明叡", "position": "自由球員", "active_seasons": "19, 20", "points": 0, "blocks": 0, "aces": 0, "digs": 900, "assists": 150},
+    # --- 台灣男子排球隊伍列表 ---
+    TVL_TEAMS = [
+        '屏東台電男排', '臺中太陽神', '臺北舉重訓練中心', '連莊男排', 
+        '桃園臺灣產物', 'conti'
+    ]
+    
+    # --- 1.1 球員個人數據 (模擬台灣 TVL 核心球員數據) ---
+    data = {
+        '姓名': ['黃建逢', '戴儒謙', '吳宗軒', '顏振發', '林宜暉', '林輅惟', '石修智', '焦璿誠', '劉佳昌', '許美中', '陳裕昇', '謝雅仁', '陳昭銘', '李興國', '洪熙鈞', 
+                 '顏廷羽', '林聖閔', '陳建廷', '許睿恩', '黃士展', '張善源', '陳昱豪', '蔡秉龍', '李東潤', '詹詠哲', '盧清銓', '董力億', '洪榮發', '呂姜耀凱', '簡偉倫'],
+        
+        '位置': ['OP', 'S', 'OP', 'MB', 'MB', 'OH', 'MB', 'OH', 'OP', 'OH', 'OH', 'OH', 'MB', 'S', 'OP', 
+                 'S', 'L', 'OP', 'MB', 'OH', 'OH', 'MB', 'OH', 'S', 'L', 'S', 'MB', 'OH', 'MB', 'L'],
+        
+        '隊伍': [
+            '屏東台電男排', '臺北舉重訓練中心', '臺中太陽神', '屏東台電男排', '連莊男排', '臺中太陽神', '桃園臺灣產物', 'conti', '連莊男排', '桃園臺灣產物', '臺中太陽神', 'conti', '臺北舉重訓練中心', '桃園臺灣產物', 'conti', 
+            '屏東台電男排', '臺中太陽神', '臺北舉重訓練中心', '桃園臺灣產物', '屏東台電男排', '屏東台電男排', '連莊男排', '臺北舉重訓練中心', '連莊男排', '連莊男排', '臺中太陽神', '屏東台電男排', '臺北舉重訓練中心', 'conti', '桃園臺灣產物'
+        ],
+        
+        '總得分': [580, 150, 450, 320, 280, 390, 240, 480, 350, 410, 380, 450, 250, 120, 350, 
+                  100, 0, 300, 200, 350, 400, 250, 300, 130, 0, 110, 220, 280, 250, 0],
+        '總進攻次數': [950, 100, 700, 400, 350, 650, 320, 800, 600, 650, 600, 750, 300, 90, 600, 
+                      80, 0, 550, 250, 600, 700, 350, 500, 100, 0, 90, 350, 500, 300, 0],
+        '成功扣球數': [500, 70, 380, 280, 240, 350, 180, 420, 300, 360, 340, 400, 200, 60, 300, 
+                      50, 0, 250, 170, 300, 350, 200, 250, 70, 0, 50, 180, 250, 200, 0],
+        
+        '接發球總次數': [50, 10, 400, 10, 5, 550, 15, 650, 20, 400, 500, 600, 10, 5, 450, 
+                        8, 700, 50, 10, 450, 500, 5, 80, 5, 750, 10, 15, 300, 10, 700],
+        '接發球成功次數': [25, 5, 200, 3, 0, 300, 0, 350, 5, 200, 250, 300, 0, 2, 200, 
+                          2, 350, 20, 0, 220, 250, 0, 30, 0, 400, 3, 0, 150, 0, 350],
+        
+        '發球得分': [30, 10, 20, 15, 10, 15, 5, 25, 15, 30, 25, 20, 10, 15, 20, 
+                    10, 0, 15, 10, 20, 25, 15, 10, 5, 0, 10, 15, 10, 10, 0],
+        '攔網得分': [20, 30, 50, 25, 30, 25, 5, 35, 35, 20, 30, 30, 40, 45, 30, 
+                    40, 0, 35, 20, 30, 25, 35, 40, 50, 0, 40, 30, 20, 40, 0],
+        
+        '總舉球次數': [0, 2500, 0, 0, 0, 0, 0, 0, 0, 1800, 0, 0, 0, 1500, 0, 
+                      2000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1200, 0, 0, 0, 0],
+        '舉球成功次數': [0, 1200, 0, 0, 0, 0, 0, 0, 0, 800, 0, 0, 0, 700, 0, 
+                        900, 0, 0, 0, 0, 0, 0, 0, 0, 0, 600, 0, 0, 0, 0],
+        
+        '身高 (cm)': [193, 180, 186, 192, 200, 185, 190, 188, 192, 178, 187, 190, 195, 176, 188, 
+                      175, 175, 193, 190, 187, 188, 196, 191, 185, 172, 175, 190, 180, 198, 170],
+        '體重 (kg)': [88, 70, 80, 85, 95, 78, 85, 80, 85, 68, 80, 70, 90, 65, 80, 
+                      68, 65, 88, 80, 75, 85, 90, 82, 75, 60, 70, 80, 75, 90, 65],
+        '獲獎紀錄': [
+            'MVP', 'Best Setter', 'Best OH', 'Best MB', '無', '無', '無', '無', '無', '無', 
+            '無', '無', '無', '無', '無', '無', '無', '無', '無', '無', '無', '無', '無', '無', '無', '無', '無', '無', '無', '無'
+        ]
+    }
+    df = pd.DataFrame(data)
 
-    # 雲林Mizuno (MZ)
-    {"team_id": "MZ", "player": "張祐晨", "position": "主攻手/隊長", "active_seasons": "18, 19, 20, 21", "points": 1100, "blocks": 65, "aces": 55, "digs": 480, "assists": 25},
-    {"team_id": "MZ", "player": "蘇彥辰", "position": "副攻手", "active_seasons": "20, 21", "points": 450, "blocks": 20, "aces": 35, "digs": 180, "assists": 10},
-    {"team_id": "MZ", "player": "洪榮發", "position": "快攻手", "active_seasons": "19, 20, 21", "points": 550, "blocks": 110, "aces": 22, "digs": 120, "assists": 8},
-    
-    # 臺中太陽神 (TSG)
-    {"team_id": "TSG", "player": "高偉誠", "position": "舉球員", "active_seasons": "18, 19, 20", "points": 120, "blocks": 25, "aces": 20, "digs": 350, "assists": 900},
-    {"team_id": "TSG", "player": "陳昭銘", "position": "主攻手", "active_seasons": "18, 19", "points": 500, "blocks": 30, "aces": 15, "digs": 200, "assists": 12},
+    # --- 1.2 模擬歷年球隊比賽成績 (TVL 歷史數據) ---
+    historical_data = {
+        '年份': [2024, 2023, 2022, 2024, 2023, 2022, 2024, 2023, 2022],
+        '隊伍': [
+            '屏東台電男排', '屏東台電男排', '屏東台電男排', 
+            '臺中太陽神', '臺中太陽神', '臺中太陽神', 
+            '臺北舉重訓練中心', '臺北舉重訓練中心', '臺北舉重訓練中心'
+        ],
+        '聯賽排名': [1, 1, 2, 3, 2, 1, 2, 3, 3],
+        '總決賽結果': ['冠軍', '冠軍', '亞軍', '季軍', '亞軍', '冠軍', '亞軍', '季軍', '季軍']
+    }
+    df_history = pd.DataFrame(historical_data)
 
-    # 桃園台灣產險 (TTI)
-    {"team_id": "TTI", "player": "李興國", "position": "主攻手", "active_seasons": "19, 20, 21", "points": 750, "blocks": 40, "aces": 30, "digs": 300, "assists": 15},
-]
-PLAYERS_DF = pd.DataFrame(PLAYERS_DATA)
+    # --- 1.3 指標計算 ---
+    df['進攻決定率'] = np.where(df['總進攻次數'] > 0, (df['成功扣球數'] / df['總進攻次數']) * 100, 0)
+    df['接發球成功率'] = np.where(df['接發球總次數'] > 0, (df['接發球成功次數'] / df['接發球總次數']) * 100, 0)
+    df['舉球效率'] = np.where(df['總舉球次數'] > 0, (df['舉球成功次數'] / df['總舉球次數']) * 100, 0)
+    df['扣球得分'] = df['總得分'] - df['發球得分'] - df['攔網得分']
+    
+    return df, df_history
 
-# --- Streamlit 應用程式主體 ---
+df, df_history = load_data()
+all_teams = sorted(df['隊伍'].unique())
 
-def format_dataframe_display(df):
-    """應用 Streamlit 格式化和顏色到數據框"""
-    
-    # 修正點：使用已重新命名為中文的欄位名稱
-    styled_df = df.style.format({
-        '總得分': "{:,.0f}", 
-        '總攔網': "{:,.0f}", 
-        '總ACE球': "{:,.0f}", 
-        '總防守': "{:,.0f}", 
-        '總舉球': "{:,.0f}", 
-    }).highlight_max(subset=['總得分', '總攔網', '總ACE球', '總防守'], color='#fff3c7') 
+# =================================================================
+# 2. 互動式篩選器 (側邊欄)
+# (這部分維持不變)
+# =================================================================
 
-    return styled_df
+st.sidebar.header("🎯 選擇球員")
 
-def create_team_analysis_view(team_id):
-    """顯示單一隊伍的詳細分析"""
-    
-    # 使用 .loc[team_id] 存取索引行
-    team_info = TEAMS_DF.loc[team_id] 
-    st.markdown(f"## {team_info['name']} 分析 ({team_info['trophy']})")
-    
-    # *** 修正 SyntaxError：將 st.info() 的 f-string 改為三引號 ***
-    st.info(f"""**隊伍簡介 (2022-2025):** {team_info['note']}""")
-    
-    # 篩選球員名單
-    team_roster = PLAYERS_DF[PLAYERS_DF['team_id'] == team_id].drop(columns=['team_id'])
-    
-    # 重新命名欄位以便於中文顯示
-    team_roster.columns = ['球員姓名', '位置', '活躍賽季 (企排)', '總得分', '總攔網', '總ACE球', '總防守', '總舉球']
-    
-    st.subheader(f"🏟️ {team_info['name']} 選手累積數據 (2022-2025)")
-    st.caption("數據為企排 18-21 賽季的累積總和 (模擬數據)。")
-    
-    # 最終修正點：強制轉換 max_value 為 Python 原生 float，解決 NumPy TypeError
-    max_score = float(team_roster['總得分'].max())
-    max_assist = float(team_roster['總舉球'].max())
+# 步驟 1: 選擇隊伍
+selected_team = st.sidebar.selectbox(
+    "1. 選擇服務隊伍:",
+    options=[''] + all_teams,
+    index=0
+)
 
-    # 格式化並顯示數據框
-    st.dataframe(
-        format_dataframe_display(team_roster),
-        use_container_width=True,
-        hide_index=True,
-        # 設置欄寬
-        column_config={
-            "球員姓名": st.column_config.Column(width="medium"),
-            "位置": st.column_config.Column(width="small"),
-            "活躍賽季 (企排)": st.column_config.Column(width="small"),
-            "總得分": st.column_config.ProgressColumn("總得分", format="%f", min_value=0, max_value=max_score), # 使用 float 類型
-            "總舉球": st.column_config.ProgressColumn("總舉球", format="%f", min_value=0, max_value=max_assist), # 使用 float 類型
-        }
+# 步驟 2: 選擇球員 (只有選了隊伍才顯示)
+selected_player_name = ''
+if selected_team:
+    players_in_team = df[df['隊伍'] == selected_team]['姓名'].unique()
+    selected_player_name = st.sidebar.selectbox(
+        "2. 選擇球員:",
+        options=players_in_team
     )
 
-    # 數據視覺化 (Top 3 Scoring Players)
-    top_scorers = team_roster.sort_values(by='總得分', ascending=False).head(3)
-    if not top_scorers.empty:
-        st.subheader("📊 隊伍主力攻擊手表現 (總得分)")
-        st.bar_chart(top_scorers.set_index('球員姓名')['總得分'])
-
-def create_league_overview():
-    """顯示聯賽總覽和頂尖球員分析"""
-    st.subheader("🌟 聯賽頂尖球員總覽 (2022-2025 累積)")
-    st.caption("此列表涵蓋所有隊伍中，在特定技術數據上最具統治力的選手。")
-    
-    # 數據整理
-    analysis_df = PLAYERS_DF.merge(TEAMS_DF['name'], left_on='team_id', right_index=True)
-    analysis_df.rename(columns={'name': '隊伍', 'player': '球員姓名', 'points': '總得分', 'blocks': '總攔網', 'aces': '總ACE球'}, inplace=True)
-    
-    
-    # 定義要展示的指標
-    metrics_to_show = {
-        '總得分': '攻擊核心 (總得分)', 
-        '總攔網': '防守堡壘 (總攔網)', 
-        '總ACE球': '發球威脅 (總ACE球)'
-    }
-    
-    cols = st.columns(3)
-    
-    for i, (col_name, title) in enumerate(metrics_to_show.items()):
-        # 找到該指標的最高值球員
-        top_player = analysis_df.loc[analysis_df[col_name].idxmax()]
-        
-        with cols[i]:
-            st.metric(
-                label=title,
-                value=f"{top_player['球員姓名']} ({top_player['隊伍']})",
-                delta=f"累積 {top_player[col_name]:,.0f} 次"
-            )
-
-    st.markdown("---")
-    st.subheader("💡 重點觀察球員:")
-    st.markdown("""
-    * **Bryan Bagunas (連莊):** 作為外援，他在短時間內打出了驚人的得分效率，是連莊能夠打破台電王朝的關鍵。
-    * **張祐晨 (Mizuno):** 本土新生代隊長，累積數據穩定且全面，在企排21年開始展現出 MVP 級的火力輸出。
-    * **陳建禎 (台電):** 經驗豐富的領袖，即便數據可能不如外援華麗，但其防守和串聯作用對台電至關重要。
-    """)
+st.sidebar.markdown("---")
 
 
-# --- 應用程式啟動設定 ---
+# =================================================================
+# 3. 主頁面：球員個人檔案顯示 (這部分維持不變)
+# =================================================================
 
-st.set_page_config(
-    page_title="台灣企業排球聯賽數據分析 (2022-2025)",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# 標題
-st.title("🏐 台灣企業排球聯賽數據分析 (2022-2025)")
-st.caption("涵蓋企排 18 年至 21 年男子組數據分析 (數據為模擬)。")
-st.markdown("---")
-
-# 選擇要分析的隊伍
-# 修正邏輯：確保使用 iterrows() 取得的 index (team_id) 和 row['name'] 來建立選項字典
-team_options = {row['name']: index for index, row in TEAMS_DF.iterrows()}
-team_names = list(team_options.keys())
-team_names.insert(0, "聯賽總覽") # 增加一個總覽選項
-
-selected_team_name = st.selectbox(
-    "選擇您想分析的隊伍或查看聯賽總覽:",
-    team_names,
-    key="team_select"
-)
-
-st.markdown("---")
-
-# 根據選擇顯示內容
-if selected_team_name == "聯賽總覽":
-    create_league_overview()
+if not selected_player_name:
+    st.info("請在側邊欄選擇一支隊伍和一位球員，以查看個人分析報告。")
 else:
-    selected_team_id = team_options[selected_team_name]
-    create_team_analysis_view(selected_team_id)
+    # 獲取選定球員的數據
+    player_data = df[df['姓名'] == selected_player_name].iloc[0]
+    
+    st.header(f"👤 {selected_player_name} - 個人表現報告")
+    st.subheader(f"目前服務隊伍：{player_data['隊伍']} ({player_data['位置']})")
+    
+    # 創建 Tabs
+    tab1, tab2 = st.tabs(["📊 數據與資料", "📜 球隊歷史成績"])
 
-st.markdown("""
-<br><br><br>
-<p style='font-size: 0.8rem; color: #a0a0a0;'>
-* 數據備註：此處所有球員數據為模型模擬的 2022 年至 2025 年 (企排 18-21 賽季) 累積總和，用於展示應用程式功能，非官方真實數據。
-</p>
-""", unsafe_allow_html=True)
+    with tab1:
+        st.subheader("1. 基礎數據與體型資料")
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("身高", f"{player_data['身高 (cm)']} cm")
+        col2.metric("體重", f"{player_data['體重 (kg)']} kg")
+        col3.metric("位置", player_data['位置'])
+        
+        st.markdown(f"**🏅 過往獲獎紀錄：** {player_data['獲獎紀錄']}")
+        st.markdown("---")
+
+        st.subheader("2. 賽季核心表現 (2025 模擬數據)")
+        
+        # 顯示核心效率指標 
+        colA, colB, colC, colD = st.columns(4)
+        colA.metric("總得分", f"{player_data['總得分']} 分")
+        colB.metric("進攻決定率", f"{player_data['進攻決定率']:.1f} %", help="成功扣球數 / 總進攻次數")
+        colC.metric("接發球成功率", f"{player_data['接發球成功率']:.1f} %", help="成功接發次數 / 總接發次數")
+        colD.metric("舉球效率", f"{player_data['舉球效率']:.1f} %", help="舉球成功次數 / 總舉球次數。非舉球員會顯示 0.0 %。")
+
+        st.subheader("3. 得分構成分析圖")
+
+        # 繪製單一球員的得分構成圓餅圖
+        score_data = pd.Series({
+            '扣球得分': player_data['扣球得分'],
+            '發球得分': player_data['發球得分'],
+            '攔網得分': player_data['攔網得分']
+        })
+        
+        # 繪製圓餅圖
+        fig, ax = plt.subplots(figsize=(7, 7))
+        wedges, texts, autotexts = ax.pie(score_data, 
+                                          labels=score_data.index,
+                                          autopct='%1.1f%%', 
+                                          startangle=90, 
+                                          colors=['#FF5733', '#33FF57', '#3357FF'])
+        
+        ax.axis('equal') 
+        ax.set_title(f"{selected_player_name} 得分來源分佈")
+        fig.tight_layout()
+        st.pyplot(fig)
+
+
+    with tab2:
+        st.subheader(f"📜 {player_data['隊伍']} 歷年比賽成績 (2022-2024 聯賽排名)")
+        
+        team_history = df_history[df_history['隊伍'] == player_data['隊伍']].sort_values(by='年份', ascending=False)
+        
+        if team_history.empty:
+             st.warning(f"🚨 模擬歷史數據中沒有找到 {player_data['隊伍']} 的紀錄。")
+        else:
+            st.dataframe(
+                team_history.rename(columns={'聯賽排名': '賽季排名'}),
+                use_container_width=True
+            )
+            
+            # 繪製歷史排名趨勢圖
+            plt.figure(figsize=(10, 5))
+            sns.lineplot(data=team_history.sort_values(by='年份'), x='年份', y='聯賽排名', marker='o')
+            plt.gca().invert_yaxis() 
+            plt.yticks(team_history['聯賽排名'].unique())
+            plt.xticks(team_history['年份'].unique()) 
+            plt.title(f"{player_data['隊伍']} 聯賽排名趨勢")
+            plt.xlabel('年份')
+            plt.ylabel('聯賽排名 (數字越小越好)')
+            st.pyplot(plt.gcf())
+            
+st.markdown("---")
+st.caption("數據來源：模擬台灣 TVL 2024-2025 賽季個人數據與歷史戰績。")
